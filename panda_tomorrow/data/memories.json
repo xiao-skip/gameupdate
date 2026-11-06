@@ -1,14 +1,14 @@
 {
-	"version": 1,
-	"comment": "记忆定义表。v0 骨架只放 M01/M03/M05（M02/M04 及后续留空待加，结构支持直接追加）。keep_cost = 留住这条记忆要扣的电量：留名字，就不省电。type: fact=事实 / name=名字 / experience=经历。",
+	"version": 2,
+	"comment": "记忆定义表（归 A 独占）。加 M02/M04 直接追加一行。effect 字段描述效果，具体逻辑在 GameState：留 M01 → T04 回水不扣电（get_task_cost 读 free_when_kept）；留 M05 → 次日「你还记得」分支（C 读 kept_id）。type: fact=事实 / name=名字 / experience=经历。",
 	"memories": [
 		{
 			"id": "M01",
 			"type": "fact",
-			"title": "暖炉漏水了",
-			"desc": "水从暖炉的密封口漏出来，湿脚印就是这么来的。已经完成回水。",
+			"title": "水会回家",
+			"desc": "用掉的水会从暖炉密封口回来。记住这件事，回水就顺手了。",
 			"phase": "S01",
-			"keep_cost": 2.0
+			"effect": "T04 回水不扣电"
 		},
 		{
 			"id": "M03",
@@ -16,15 +16,15 @@
 			"title": "不加班灯",
 			"desc": "和〔熊猫名〕一起给那盏常亮的灯起的名字。灯负责亮，我们负责休息。",
 			"phase": "S02",
-			"keep_cost": 1.0
+			"effect": "小板凳搬到总控屏旁（剧情演出，C 接线）"
 		},
 		{
 			"id": "M05",
 			"type": "experience",
-			"title": "它今天被骂了",
-			"desc": "老板把一摞没寄出去的信算在〔熊猫名〕头上，当众骂了它。它回家很晚，诉了苦，你安慰了它。留下这条记忆不省电，却是它第二天唯一不用重新解释的救赎。",
+			"title": "它被骂了",
+			"desc": "老板把一摞没寄出去的信算在〔熊猫名〕头上，当众骂了它。它回家很晚，诉了苦，你安慰了它。",
 			"phase": "S02b",
-			"keep_cost": 5.0
+			"effect": "次日触发「你还记得」分支（C 读 kept_id）"
 		}
 	]
 }

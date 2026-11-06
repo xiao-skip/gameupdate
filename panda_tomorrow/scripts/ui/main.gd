@@ -1,64 +1,56 @@
 extends Node2D
-## 临时验收脚本（v0-skeleton 专用，后续由正式 UI 替换，B/C 可直接删改）。
-## 只做三件事，对应第 0 步的验收标准：
-##   1. GameState 能被全局访问 → 打印字段初值
-##   2. 存根函数能调用不报错
-##   3. data/ 三个 JSON 能被 JSON.parse_string 解析
-## 打印完自动退出，方便 headless 跑验收。
+## 临时验收入口（A 维护到 B 接手为止，B 可整体替换成正式 UI；
+## A 的验收测试在 scripts/core/test_act1.gd，属于 A 的独占文件）。
+## 跑三件事：
+##   1. 打印 GameState 初值（分工文档第 2 节；如显示非初值 = 读到了存档）
+##   2. 跑 4.2 A 任务 + 验收清单的测试套件
+##   3. data/ 三个 JSON 解析检查
+## 全部通过退出码 0，有失败退出码 1，方便 headless 自动化。
+
+const TestAct1 := preload("res://scripts/core/test_act1.gd")
 
 func _ready() -> void:
-	print("=== [1] GameState autoload 可全局访问，字段初值 ===")
-	print("day_count = ", GameState.day_count)
-	print("phase = ", GameState.phase)
-	print("chapter = ", GameState.chapter)
-	print("controller_name = ", GameState.controller_name)
-	print("energy = ", GameState.energy, " / ", GameState.max_energy)
-	print("memory_capacity = ", GameState.memory_capacity)
-	print("kept_memory_ids = ", GameState.kept_memory_ids)
-	print("memory_candidates = ", GameState.memory_candidates)
+	print("=== [1] GameState 初值（分工文档第 2 节） ===")
 	print("panda_name = ", GameState.panda_name)
-	print("panda_mood = ", GameState.panda_mood)
-	print("panda_fatigue = ", GameState.panda_fatigue)
-	print("comforted_today = ", GameState.comforted_today)
-	print("lamp_name = ", GameState.lamp_name)
-	print("lamp_lit = ", GameState.lamp_lit)
-	print("stool_placed = ", GameState.stool_placed)
-	print("leak_found = ", GameState.leak_found)
-	print("leak_fixed = ", GameState.leak_fixed)
-	print("heater_on = ", GameState.heater_on)
-	print("note_count = ", GameState.note_count)
-	print("revealed_loop = ", GameState.revealed_loop)
-	print("tasks_status = ", GameState.tasks_status)
-	print("ghost_options_seen = ", GameState.ghost_options_seen)
-	print("home_ritual_count = ", GameState.home_ritual_count)
-	print("chapter_flags = ", GameState.chapter_flags)
+	print("panda_preset = ", GameState.panda_preset)
+	print("phase = ", GameState.phase)
+	print("leak_marked = ", GameState.leak_marked)
+	print("lamp_named = ", GameState.lamp_named)
+	print("comforted = ", GameState.comforted)
+	print("water_returned = ", GameState.water_returned)
+	print("jg = ", GameState.jg)
+	print("notes = ", GameState.notes)
+	print("device_flags = ", GameState.device_flags)
+	print("jg_balance = ", GameState.jg_balance)
+	print("collectibles = ", GameState.collectibles)
+	print("fatigue = ", GameState.fatigue)
+	print("last_comfort_choice = ", GameState.last_comfort_choice)
+	print("energy = ", GameState.energy)
+	print("clean_water = ", GameState.clean_water, " / pending_water = ", GameState.pending_water)
+	print("daily_done = ", GameState.daily_done)
+	print("memory_candidates = ", GameState.memory_candidates)
+	print("weather = ", GameState.weather)
+	print("kept_id = ", GameState.kept_id)
 
-	print("=== [2] 存根函数调用不报错 ===")
-	GameState.set_names("团团", "团圆")
-	GameState.start_new_day()
-	GameState.unlock_task("T01")
-	GameState.complete_task("T01")
-	GameState.add_memory_candidate("M05")
-	print("keep_memory 返回默认值: ", GameState.keep_memory("M05"))
-	print("has_kept_memory 返回默认值: ", GameState.has_kept_memory("M05"))
-	print("spend_energy 返回默认值: ", GameState.spend_energy(5.0))
-	GameState.comfort_panda()
-	GameState.set_lamp_name("不加班灯")
-	GameState.add_daily_note()
-	GameState.advance_phase("S01")
-	GameState.reveal_loop()
-	print("save_game 返回默认值: ", GameState.save_game())
-	print("load_game 返回默认值: ", GameState.load_game())
-	GameState.reset_for_new_game()
-	print("全部存根函数调用完毕，无报错")
+	print("\n=== [2] 分工文档 4.2（A 的任务）验收测试 ===")
+	var t = TestAct1.new()
+	var r: Dictionary = t.run()
 
-	print("=== [3] data/ JSON 解析 ===")
+	print("\n=== [3] data/ JSON 解析 ===")
 	_check_json("res://data/tasks.json")
 	_check_json("res://data/memories.json")
 	_check_json("res://data/script.json")
 
-	print("=== v0 骨架验收跑完，退出 ===")
-	get_tree().quit()
+	var total: int = int(r["passed"]) + int(r["failed"])
+	print("\n===== 验收汇总：", r["passed"], " / ", total, " 项通过 =====")
+	if int(r["failed"]) > 0:
+		print("失败项：")
+		for item in r["failures"]:
+			print("  - ", item)
+		get_tree().quit(1)
+	else:
+		print("全部通过，退出")
+		get_tree().quit(0)
 
 
 func _check_json(path: String) -> void:
