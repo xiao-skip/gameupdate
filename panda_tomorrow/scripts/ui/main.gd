@@ -1,80 +1,97 @@
 extends Node2D
-## 临时验收脚本（v0-skeleton 专用，后续由正式 UI 替换，B/C 可直接删改）。
-## 只做三件事，对应第 0 步的验收标准：
-##   1. GameState 能被全局访问 → 打印字段初值
-##   2. 存根函数能调用不报错
-##   3. data/ 三个 JSON 能被 JSON.parse_string 解析
-## 打印完自动退出，方便 headless 跑验收。
+## 第一幕核心测试：int 能量 + keep_cost + 派工 + 进度 + 存档序列化 + 重启
+## 用 Godot headless 跑：godot --headless --path <项目>
+
+var failures: int = 0
+
+
+func check(label: String, condition: bool) -> void:
+	if condition:
+		print("[PASS] ", label)
+	else:
+		failures += 1
+		print("[FAIL] ", label)
+
 
 func _ready() -> void:
-	print("=== [1] GameState autoload 可全局访问，字段初值 ===")
-	print("day_count = ", GameState.day_count)
-	print("phase = ", GameState.phase)
-	print("chapter = ", GameState.chapter)
-	print("controller_name = ", GameState.controller_name)
-	print("energy = ", GameState.energy, " / ", GameState.max_energy)
-	print("memory_capacity = ", GameState.memory_capacity)
-	print("kept_memory_ids = ", GameState.kept_memory_ids)
-	print("memory_candidates = ", GameState.memory_candidates)
-	print("panda_name = ", GameState.panda_name)
-	print("panda_mood = ", GameState.panda_mood)
-	print("panda_fatigue = ", GameState.panda_fatigue)
-	print("comforted_today = ", GameState.comforted_today)
-	print("lamp_name = ", GameState.lamp_name)
-	print("lamp_lit = ", GameState.lamp_lit)
-	print("stool_placed = ", GameState.stool_placed)
-	print("leak_found = ", GameState.leak_found)
-	print("leak_fixed = ", GameState.leak_fixed)
-	print("heater_on = ", GameState.heater_on)
-	print("note_count = ", GameState.note_count)
-	print("revealed_loop = ", GameState.revealed_loop)
-	print("tasks_status = ", GameState.tasks_status)
-	print("ghost_options_seen = ", GameState.ghost_options_seen)
-	print("home_ritual_count = ", GameState.home_ritual_count)
-	print("chapter_flags = ", GameState.chapter_flags)
+	print("=== 第一幕核心测试 ===")
 
-	print("=== [2] 存根函数调用不报错 ===")
-	GameState.set_names("团团", "团圆")
-	GameState.start_new_day()
-	GameState.unlock_task("T01")
-	GameState.complete_task("T01")
-	GameState.add_memory_candidate("M05")
-	print("keep_memory 返回默认值: ", GameState.keep_memory("M05"))
-	print("has_kept_memory 返回默认值: ", GameState.has_kept_memory("M05"))
-	print("spend_energy 返回默认值: ", GameState.spend_energy(5.0))
-	GameState.comfort_panda()
-	GameState.set_lamp_name("不加班灯")
-	GameState.add_daily_note()
-	GameState.advance_phase("S01")
-	GameState.reveal_loop()
-	print("save_game 返回默认值: ", GameState.save_game())
-	print("load_game 返回默认值: ", GameState.load_game())
+	# --- 初始 ---
 	GameState.reset_for_new_game()
-	print("全部存根函数调用完毕，无报错")
+	check("初始 energy = 100", GameState.energy == 100)
+	check("初始 jg = 0", GameState.jg == 0)
+	check("初始 notes 空", GameState.notes.is_empty())
+	check("初始 can_proceed = false", not GameState.can_proceed_act1())
 
-	print("=== [3] data/ JSON 解析 ===")
-	_check_json("res://data/tasks.json")
-	_check_json("res://data/memories.json")
-	_check_json("res://data/script.json")
+	# --- spend_energy ---
+	check("spend 30 成功", GameState.spend_energy(30))
+	check("energy = 70", GameState.energy == 70)
+	check("spend 80 失败", not GameState.spend_energy(80))
+	check("失败不扣 energy = 70", GameState.energy == 70)
 
-	print("=== v0 骨架验收跑完，退出 ===")
-	get_tree().quit()
+	# --- keep_memory ---
+	GameState.reset_for_new_game()
+	GameState.add_memory_candidate("M05")
+	check("留 M05 成功", GameState.keep_memory("M05"))
+	check("留 M05 后 energy = 95", GameState.energy == 95)
+	check("has_kept(M05)", GameState.has_kept_memory("M05"))
+	GameState.add_memory_candidate("M03")
+	check("capacity=1 拒绝第二条", not GameState.keep_memory("M03"))
 
+	# --- submit_task ---
+	GameState.reset_for_new_game()
+	check("未解锁 T02 被拒", not GameState.submit_task("T02"))
+	GameState.unlock_task("T01")
+	GameState.unlock_task("T02")
+	GameState.unlock_task("T03")
+	GameState.unlock_task("T04")
+	check("T01 提交成功", GameState.submit_task("T01"))
+	check("T01 后 energy = 80", GameState.energy == 80)
+	check("T01 后 jg = 2", GameState.jg == 2)
+	check("T01 重复提交被拒", not GameState.submit_task("T01"))
+	check("T02 提交成功", GameState.submit_task("T02"))
+	check("T03 提交成功", GameState.submit_task("T03"))
+	check("T04 提交成功", GameState.submit_task("T04"))
+	check("四任务后 energy = 35", GameState.energy == 35)
+	check("四任务后 jg = 8", GameState.jg == 8)
+	check("T04 设 leak_fixed", GameState.leak_fixed)
+	check("T04 解锁 M01 候选", GameState.memory_candidates.has("M01"))
 
-func _check_json(path: String) -> void:
-	var text := FileAccess.get_file_as_string(path)
-	if text.is_empty():
-		print("[FAIL] 读取失败: ", path)
-		return
-	var data: Variant = JSON.parse_string(text)
-	if data == null:
-		print("[FAIL] JSON 解析失败: ", path)
-		return
-	var keys: int = 0
-	if data is Dictionary and data.has("tasks"):
-		keys = (data["tasks"] as Array).size()
-	elif data is Dictionary and data.has("memories"):
-		keys = (data["memories"] as Array).size()
-	elif data is Dictionary and data.has("scenes"):
-		keys = (data["scenes"] as Array).size()
-	print("[OK] ", path, " 解析成功，条目数 = ", keys)
+	# --- can_proceed_act1 ---
+	check("缺 leak_found 时 false", not GameState.can_proceed_act1())
+	GameState.leak_found = true
+	GameState.set_lamp_name("不加班灯")
+	GameState.comfort_panda()
+	check("四条件齐 = true", GameState.can_proceed_act1())
+
+	# --- 存档序列化 ---
+	var snap: Dictionary = GameState.serialize()
+	GameState.reset_for_new_game()
+	check("重置后 jg = 0", GameState.jg == 0)
+	GameState.deserialize(snap)
+	check("恢复 jg = 8", GameState.jg == 8)
+	check("恢复 energy = 35", GameState.energy == 35)
+	check("恢复 leak_fixed", GameState.leak_fixed)
+	check("恢复 lamp_name", GameState.lamp_name == "不加班灯")
+
+	# --- 便条与重启 ---
+	GameState.reset_for_new_game()
+	GameState.add_memory_candidate("M01")
+	check("留 M01 成功", GameState.keep_memory("M01"))
+	GameState.add_daily_note()
+	check("便条 +1", GameState.notes.size() == 1)
+	GameState.start_new_day()
+	check("重启 day = 2", GameState.day_count == 2)
+	check("重启便条 = 2", GameState.notes.size() == 2)
+	check("重启后 kept 保留 M01", GameState.has_kept_memory("M01"))
+	check("重启后候选清空", GameState.memory_candidates.is_empty())
+	check("重启后 comforted 清空", not GameState.comforted_today)
+
+	# --- 汇总 ---
+	print("")
+	if failures == 0:
+		print("=== 全部通过 ===")
+		get_tree().quit(0)
+	else:
+		print("=== 失败 ", failures, " 项 ===")
+		get_tree().quit(1)

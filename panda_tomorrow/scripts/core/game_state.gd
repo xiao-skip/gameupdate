@@ -1,202 +1,305 @@
 extends Node
 ## ============================================================
-## GameState —— 全局游戏状态存根（v0 骨架，不含任何游戏逻辑）
+## GameState —— 全局游戏状态（第一幕核心逻辑已实现）
 ##
 ## 《熊猫，明天见》第一幕「它不是第一次说」
-## 你（团圆，全屋智能总控）每天失忆，照看一只在邮局上班的普通熊猫。
-## 这天它下班被老板当众骂了，你安慰它、一起给灯起名；
-## 夜里翻冰箱便条才发现——这不是它第一次被骂，也不是它第一次告诉你。
-##
-## 角色：团圆=玩家/总控；多吉=教师机器人；帕丁=生活管家；小咪=清洁机器人；熊猫=被选择的那只
-##
-## 通过 project.godot 的 [autoload] 注册为全局单例，任何脚本直接 GameState.xxx 访问。
-## 本阶段：只声明字段（含预留）+ 函数签名与注释 + 默认返回值。
+## 能量模型：int 整数单位 + 数据驱动 keep_cost（留记忆 = 花电）+ 第一幕无水
+## 通过 project.godot 的 [autoload] 注册为全局单例，任何脚本直接 GameState.xxx。
 ## ============================================================
 
 # ---------- 基础进度 ----------
-
-## 当前天数。每日重启 +1，是整个游戏"环"的骨架。
 var day_count: int = 1
-
-## 当前剧情阶段，对应 data/script.json 里每条场景的 phase 字段。
-## 第一幕顺序：S00 启用 → S01 湿脚印 → S02b 它回家很晚 → S02 给灯命名 → S03 反转
 var phase: String = "S00"
-
-## 当前章节号（第一幕 = 1；预留后续幕，手法见剧情第五节）。
 var chapter: int = 1
 
-# ---------- 总控（玩家） ----------
-
-## 总控名。S00 命名后写入，运行时替换所有台词里的〔总控名〕。默认"团圆"。
-var controller_name: String = "团圆"
-
-## 剩余电量。主题是"留省电，还是留名字"——留住记忆要费电。
-var energy: float = 100.0
-
-## 电量上限（预留：后续章节可调）。
-var max_energy: float = 100.0
-
-## 每天能稳定留下的记忆条数。多吉在 S00 说："今天能稳定留下一件事。其他的，我们慢慢来。"
+# ---------- 玩家（总控 / 念念） ----------
+var controller_name: String = "念念"
+var energy: int = 100
+var max_energy: int = 100
 var memory_capacity: int = 1
-
-## 跨天留住的记忆 id（"M01"/"M03"/"M05"…）。总控失忆后，这是仅存的东西。
 var kept_memory_ids: Array = []
-
-## 今夜的记忆候选（S02b 之后出现《它今天被骂了》等）。夜里选记忆界面用，次日失忆时清空。
 var memory_candidates: Array = []
 
 # ---------- 熊猫 ----------
-
-## 熊猫名。S00 选择熊猫并命名后写入，替换台词里的〔熊猫名〕。
 var panda_name: String = ""
-
-## 熊猫情绪："normal"（平常）/"low"（低落，回家很晚）/"calm"（被安慰后平复）。
 var panda_mood: String = "normal"
-
-## 熊猫疲惫度（预留：后续章节"疲惫递减"手法——没被记住的诉苦会一天比一天更累）。
 var panda_fatigue: int = 0
-
-## 今天是否安慰过熊猫（S02b 的安慰选项后置 true，当日有效）。
 var comforted_today: bool = false
 
-# ---------- 家宅状态 ----------
-
-## 灯的名字（S02 给灯命名，如"不加班灯"）。命名后生成 M03。
+# ---------- 家宅 ----------
 var lamp_name: String = ""
-
-## 最后一盏灯是否常亮。旧录音："最后一盏灯，留给还没回家的人。"
 var lamp_lit: bool = true
-
-## 小板凳是否搬到总控屏旁（S02 产出，"位置永久保留"，不吃失忆）。
 var stool_placed: bool = false
-
-## 漏水标记（S01 湿脚印发现后置 true）。
 var leak_found: bool = false
-
-## 回水是否完成（S01 的 A/B 选项都通向暖炉密封口；完成后生成 M01）。
 var leak_fixed: bool = false
-
-## 暖炉是否已启动（S01：地面"已打扫干净"后启动）。
 var heater_on: bool = false
-
-## 冰箱便条张数。每日重启自动 +1，日期递增、内容几乎一样；
-## S03 玩家亲手翻看、自己数出"已经 N 张了"，反转由玩家拼出来，不靠旁白点破。
-var note_count: int = 0
-
-## 反转是否已揭示（S03 翻完那沓便条后置 true：它不是第一次被骂）。
 var revealed_loop: bool = false
 
-# ---------- 任务派工 ----------
+# ---------- 家光与便条 ----------
+var jg: int = 0
+var notes: Array = []
 
-## 任务运行时状态：{"T01": "locked"/"available"/"done", …}。
-## 任务定义见 data/tasks.json（T01–T04，结构支持追加 T05/T06）。
+# ---------- 任务 ----------
 var tasks_status: Dictionary = {}
 
 # ---------- 预留（后续章节，第一幕不启用） ----------
-
-## 幽灵选项记录：{"选项文本": 次数}——见过/选过的选项留痕，后续章节手法。
 var ghost_options_seen: Dictionary = {}
-
-## 固定回家仪式已发生次数（后续章节手法：同一套回家动作每晚上演）。
 var home_ritual_count: int = 0
-
-## 后续章节的杂项开关位（占位，避免以后破坏存档结构）。
 var chapter_flags: Dictionary = {}
 
+# ---------- 缓存 ----------
+var _memories_data: Dictionary = {}
+var _tasks_data: Dictionary = {}
+var _script_data: Dictionary = {}
 
-# ============================================================
-# 函数存根：只写签名 + 注释 + 默认返回值，逻辑由 B/C 补齐
-# ============================================================
 
-## S00：选择熊猫并命名。panda 写入 panda_name（替换〔熊猫名〕），
-## controller 写入 controller_name（替换〔总控名〕，默认"团圆"）。
+func _get_memories() -> Dictionary:
+	if _memories_data.is_empty():
+		var text: String = FileAccess.get_file_as_string("res://data/memories.json")
+		if not text.is_empty():
+			var parsed: Variant = JSON.parse_string(text)
+			if parsed is Dictionary:
+				_memories_data = parsed
+	return _memories_data
+
+
+func _get_tasks() -> Dictionary:
+	if _tasks_data.is_empty():
+		var text: String = FileAccess.get_file_as_string("res://data/tasks.json")
+		if not text.is_empty():
+			var parsed: Variant = JSON.parse_string(text)
+			if parsed is Dictionary:
+				_tasks_data = parsed
+	return _tasks_data
+
+
+func _get_script() -> Dictionary:
+	if _script_data.is_empty():
+		var text: String = FileAccess.get_file_as_string("res://data/script.json")
+		if not text.is_empty():
+			var parsed: Variant = JSON.parse_string(text)
+			if parsed is Dictionary:
+				_script_data = parsed
+	return _script_data
+
+
+func _get_memory_keep_cost(memory_id: String) -> int:
+	var data: Dictionary = _get_memories()
+	var memories: Array = data.get("memories", [])
+	for entry: Dictionary in memories:
+		if entry.get("id", "") == memory_id:
+			return int(entry.get("keep_cost", 0))
+	return 0
+
+
+func _get_task(task_id: String) -> Dictionary:
+	var data: Dictionary = _get_tasks()
+	var tasks: Array = data.get("tasks", [])
+	for entry: Dictionary in tasks:
+		if entry.get("id", "") == task_id:
+			return entry
+	return {}
+
+
+func _get_daily_note_text() -> String:
+	var data: Dictionary = _get_script()
+	var note: Dictionary = data.get("daily_note", {})
+	return str(note.get("template", "今天……又是这样。"))
+
+
+# ---------- 命名 ----------
 func set_names(panda: String, controller: String) -> void:
-	pass
+	panda_name = panda
+	controller_name = controller
 
 
-## 每日重启，"环"的闭合点：day_count +1；执行失忆——清空当天状态
-## （memory_candidates、comforted_today、panda_mood 回落），kept_memory_ids 原样保留；
-## 冰箱自动多一张便条（note_count +1，内容模板见 data/script.json 的 daily_note）；
-## phase 回到当日入口，等待熊猫"又从头说起"。
-func start_new_day() -> void:
-	pass
+# ---------- 电 ----------
+func spend_energy(amount: int) -> bool:
+	if amount < 0:
+		amount = 0
+	if energy >= amount:
+		energy -= amount
+		return true
+	return false
 
 
-## 解锁任务：tasks_status[task_id] 置为 "available"（如 S00 结束解锁 T01，进入自由派工）。
-func unlock_task(task_id: String) -> void:
-	pass
-
-
-## 完成任务：tasks_status[task_id] 置为 "done"。
-## 注意 S01 的触发条件是"完成清洁与生活"，需要检查 T01、T02 均为 done。
-func complete_task(task_id: String) -> void:
-	pass
-
-
-## 生成记忆候选：把 memory_id 追加进 memory_candidates，供夜里选记忆。
-## 例：S01 回水后生成 M01；S02 给灯命名后生成 M03；S02b 安慰后生成 M05《它今天被骂了》。
+# ---------- 记忆 ----------
 func add_memory_candidate(memory_id: String) -> void:
-	pass
+	if not memory_candidates.has(memory_id):
+		memory_candidates.append(memory_id)
 
 
-## 夜里选记忆（S03 之前的抉择点）：把 memory_id 从候选挪进 kept_memory_ids
-## （受 memory_capacity 上限约束），并按 data/memories.json 的 keep_cost 扣电——
-## 留名字，就不省电。返回是否成功。
 func keep_memory(memory_id: String) -> bool:
-	return false
+	if kept_memory_ids.size() >= memory_capacity:
+		return false
+	var cost: int = _get_memory_keep_cost(memory_id)
+	if not spend_energy(cost):
+		return false
+	kept_memory_ids.append(memory_id)
+	memory_candidates.erase(memory_id)
+	return true
 
 
-## 查询某条记忆是否已留住。次日分支用：留了 M05 → 熊猫轻声"……你还记得。"；
-## 没留 → 它又要从头说起，这一次语气更疲惫。
 func has_kept_memory(memory_id: String) -> bool:
-	return false
+	return kept_memory_ids.has(memory_id)
 
 
-## 扣电量。电量不足返回 false——"留省电还是留名字"的取舍入口。
-func spend_energy(amount: float) -> bool:
-	return false
+# ---------- 任务 ----------
+func unlock_task(task_id: String) -> void:
+	tasks_status[task_id] = "available"
 
 
-## 安慰熊猫（S02b 安慰选项 A/B/C 之后）：comforted_today = true，
-## panda_mood 由 low 转为 calm（"……谢谢你听我说。"），
-## 并生成经历记忆候选 M05《它今天被骂了》。
+func complete_task(task_id: String) -> void:
+	tasks_status[task_id] = "done"
+
+
+## 派工：读 tasks.json 校验/扣电/记 done/发家光/解锁记忆。
+func submit_task(task_id: String) -> bool:
+	var task: Dictionary = _get_task(task_id)
+	if task.is_empty():
+		return false
+	if tasks_status.get(task_id, "locked") != "available":
+		return false
+	var cost: int = int(task.get("energy", 0))
+	if not spend_energy(cost):
+		return false
+	tasks_status[task_id] = "done"
+	jg += int(task.get("jg", 0))
+	var memory_id: String = str(task.get("memory", ""))
+	if memory_id != "":
+		add_memory_candidate(memory_id)
+	if task_id == "T04":
+		leak_fixed = true
+	return true
+
+
+# ---------- 剧情推进 ----------
 func comfort_panda() -> void:
-	pass
+	comforted_today = true
+	panda_mood = "calm"
+	add_memory_candidate("M05")
 
 
-## 给灯命名（S02）：写入 lamp_name，生成 M03，
-## 小板凳搬到总控屏旁（stool_placed = true，位置永久保留）。
 func set_lamp_name(new_name: String) -> void:
-	pass
+	lamp_name = new_name
+	stool_placed = true
+	add_memory_candidate("M03")
 
 
-## 冰箱加一张便条：note_count +1。内容取 data/script.json 的 daily_note 模板，
-## 日期递增、内容几乎一样（"今天老板又骂我，把信弄丢了。可那不是我弄丢的。"）。
-func add_daily_note() -> void:
-	pass
-
-
-## 推进剧情阶段：phase 切到 next_phase（S00 → S01 → S02b → S02 → S03）。
 func advance_phase(next_phase: String) -> void:
-	pass
+	phase = next_phase
 
 
-## 揭示反转（S03）：revealed_loop = true。
-## 翻便条、数张数的演出由 UI 层做，本函数只翻状态位。
 func reveal_loop() -> void:
-	pass
+	revealed_loop = true
 
 
-## 存档。返回是否成功（存档格式后续定，字段已含预留，避免破坏结构）。
+func can_proceed_act1() -> bool:
+	return leak_found and leak_fixed and lamp_name != "" and comforted_today
+
+
+# ---------- 便条与重启 ----------
+func add_daily_note() -> void:
+	notes.append({"day": day_count, "text": _get_daily_note_text()})
+
+
+func start_new_day() -> void:
+	day_count += 1
+	memory_candidates = []
+	comforted_today = false
+	panda_mood = "normal"
+	add_daily_note()
+	phase = "S00"
+
+
+# ---------- 存档（第一幕字段；预留字段暂不持久化） ----------
+func serialize() -> Dictionary:
+	return {
+		"day_count": day_count,
+		"phase": phase,
+		"chapter": chapter,
+		"controller_name": controller_name,
+		"energy": energy,
+		"kept_memory_ids": kept_memory_ids,
+		"memory_candidates": memory_candidates,
+		"panda_name": panda_name,
+		"panda_mood": panda_mood,
+		"comforted_today": comforted_today,
+		"lamp_name": lamp_name,
+		"stool_placed": stool_placed,
+		"leak_found": leak_found,
+		"leak_fixed": leak_fixed,
+		"heater_on": heater_on,
+		"revealed_loop": revealed_loop,
+		"jg": jg,
+		"notes": notes,
+		"tasks_status": tasks_status,
+	}
+
+
+func deserialize(data: Dictionary) -> void:
+	day_count = int(data.get("day_count", 1))
+	phase = str(data.get("phase", "S00"))
+	chapter = int(data.get("chapter", 1))
+	controller_name = str(data.get("controller_name", "念念"))
+	energy = int(data.get("energy", 100))
+	kept_memory_ids = data.get("kept_memory_ids", [])
+	memory_candidates = data.get("memory_candidates", [])
+	panda_name = str(data.get("panda_name", ""))
+	panda_mood = str(data.get("panda_mood", "normal"))
+	comforted_today = bool(data.get("comforted_today", false))
+	lamp_name = str(data.get("lamp_name", ""))
+	stool_placed = bool(data.get("stool_placed", false))
+	leak_found = bool(data.get("leak_found", false))
+	leak_fixed = bool(data.get("leak_fixed", false))
+	heater_on = bool(data.get("heater_on", false))
+	revealed_loop = bool(data.get("revealed_loop", false))
+	jg = int(data.get("jg", 0))
+	notes = data.get("notes", [])
+	tasks_status = data.get("tasks_status", {})
+
+
 func save_game() -> bool:
-	return false
+	var f: FileAccess = FileAccess.open("user://savegame.json", FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(serialize()))
+	f.close()
+	return true
 
 
-## 读档。返回是否成功。
 func load_game() -> bool:
+	var f: FileAccess = FileAccess.open("user://savegame.json", FileAccess.READ)
+	if f == null:
+		return false
+	var text: String = f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if parsed is Dictionary:
+		deserialize(parsed)
+		return true
 	return false
 
 
-## 重开一局：全部字段回到本文件顶部的初值。
 func reset_for_new_game() -> void:
-	pass
+	day_count = 1
+	phase = "S00"
+	chapter = 1
+	controller_name = "念念"
+	energy = 100
+	kept_memory_ids = []
+	memory_candidates = []
+	panda_name = ""
+	panda_mood = "normal"
+	panda_fatigue = 0
+	comforted_today = false
+	lamp_name = ""
+	lamp_lit = true
+	stool_placed = false
+	leak_found = false
+	leak_fixed = false
+	heater_on = false
+	revealed_loop = false
+	jg = 0
+	notes = []
+	tasks_status = {}
