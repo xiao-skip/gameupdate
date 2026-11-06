@@ -57,6 +57,9 @@ var water_returned: bool = false
 ## 家光（第一幕累计结算；验收 A-Q1：打扫+生活+微课+回水 合计 +8）。
 var jg: int = 0
 
+## 房间走完一圈（首尾传送）。B 的快捷切换解锁条件；跨天保留。
+var looped_once: bool = false
+
 ## 便条数组，每条 { "date": 第几天(int), "text": 便条内容 }。
 ## 每次 restart 追加一张：日期递增、内容几乎一样（分工文档第 2 节：date+text）。
 var notes: Array = []
@@ -276,6 +279,59 @@ func has_wet_footprints() -> bool:
 
 
 # ============================================================
+# B 的 UI 查询接口（只读；渲染任务卡 / 记忆界面 / 顶栏用）
+# ============================================================
+
+## 全部任务 id（按 tasks.json 顺序）。任务卡「渲染任意列表」直接遍历这个。
+func get_task_ids() -> Array:
+	return _tasks.keys()
+
+
+## 任务展示信息 + 当前有效成本：
+## { "id", "name", "robot", "type", "desc", "energy", "water", "jg", "done" }。
+## 成本含渗漏加价与留记忆减免（get_task_cost），done = 当日已派工。
+func get_task_info(id: String) -> Dictionary:
+	var t: Dictionary = _tasks.get(id, {})
+	if t.is_empty():
+		return {}
+	var cost: Dictionary = get_task_cost(id)
+	return {
+		"id": id,
+		"name": String(t.get("name", id)),
+		"robot": String(t.get("robot", "")),
+		"type": String(t.get("type", "")),
+		"desc": String(t.get("desc", "")),
+		"energy": int(cost["energy"]),
+		"water": int(cost["water"]),
+		"jg": int(cost["jg"]),
+		"done": daily_done.has(id),
+	}
+
+
+## 记忆展示信息：{ "id", "title", "desc", "type" }。id 不存在返回空字典。
+func get_memory_info(id: String) -> Dictionary:
+	var m: Dictionary = _memories.get(id, {})
+	if m.is_empty():
+		return {}
+	return {
+		"id": id,
+		"title": String(m.get("title", id)),
+		"desc": String(m.get("desc", "")),
+		"type": String(m.get("type", "")),
+	}
+
+
+## 第几天：一天一张便条，便条数 + 1（B 的顶栏 / 便条翻阅按此显示）。
+func day_number() -> int:
+	return notes.size() + 1
+
+
+## 房间走完一圈（B 在首尾传送发生时调用一次）。
+func mark_loop_completed() -> void:
+	looped_once = true
+
+
+# ============================================================
 # 预留函数（后续章节，第一幕不启用）
 # ============================================================
 
@@ -316,6 +372,7 @@ func save_game() -> bool:
 			"comforted": comforted,
 			"water_returned": water_returned,
 			"jg": jg,
+			"looped_once": looped_once,
 			"notes": notes,
 			"device_flags": device_flags,
 			"jg_balance": jg_balance,
@@ -367,6 +424,7 @@ func reset_for_new_game() -> void:
 	comforted = false
 	water_returned = false
 	jg = 0
+	looped_once = false
 	notes = []
 	device_flags = {"seal": false, "condenser": false, "rack": false}
 	jg_balance = 0
@@ -403,6 +461,7 @@ func _apply_save(data: Dictionary) -> void:
 	comforted = bool(w.get("comforted", false))
 	water_returned = bool(w.get("water_returned", false))
 	jg = int(w.get("jg", 0))
+	looped_once = bool(w.get("looped_once", false))
 	notes = []
 	for n in w.get("notes", []):
 		if n is Dictionary:
