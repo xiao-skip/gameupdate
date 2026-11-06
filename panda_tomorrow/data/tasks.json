@@ -1,10 +1,10 @@
 {
 	"version": 1,
-	"comment": "任务定义表。energy=耗电；jg=家光；memory=完成后解锁的记忆候选。运行时状态存 GameState.tasks_status（locked/available/done）。",
+	"comment": "任务定义表（定稿）。energy=耗电；slot=占时间槽；jg=家光；memory=完成后解锁的记忆候选。运行时状态存 GameState.tasks_status（locked/available/done）。",
 	"tasks": [
-		{"id": "T01", "name": "打扫屋子", "robot": "小咪", "type": "clean", "desc": "小咪负责打扫，把屋子收拾干净。", "unlock_phase": "S00", "energy": 20, "jg": 2},
-		{"id": "T02", "name": "生活准备", "robot": "帕丁", "type": "life", "desc": "帕丁负责生活准备：暖炉待命，晚餐就绪。", "unlock_phase": "S00", "energy": 20, "jg": 2},
-		{"id": "T03", "name": "教学微课", "robot": "多吉", "type": "teach", "desc": "多吉的教学派工与微课。", "unlock_phase": "S00", "energy": 15, "jg": 2},
-		{"id": "T04", "name": "修好暖炉密封口", "robot": "念念", "type": "fix", "desc": "S01 湿脚印之后：修好暖炉密封口，止住漏水。", "unlock_phase": "S01", "energy": 10, "jg": 2, "memory": "M01"}
+		{"id": "T01", "name": "打扫干净", "robot": "小咪", "type": "clean", "desc": "小咪负责打扫，把屋子收拾干净。", "unlock_phase": "S00", "energy": 2, "slot": 1, "jg": 2},
+		{"id": "T02", "name": "生活准备", "robot": "帕丁", "type": "life", "desc": "帕丁负责生活准备：暖炉待命，晚餐就绪。", "unlock_phase": "S00", "energy": 2, "slot": 1, "jg": 2},
+		{"id": "T03", "name": "教学微课", "robot": "多吉", "type": "teach", "desc": "多吉的教学派工与微课。", "unlock_phase": "S00", "energy": 2, "slot": 1, "jg": 2},
+		{"id": "T04", "name": "修好暖炉密封口", "robot": "帕丁", "type": "fix", "desc": "S01 湿脚印之后：修好暖炉密封口，止住漏水。", "unlock_phase": "S01", "energy": 2, "slot": 1, "jg": 2, "memory": "M01"}
 	]
 }

@@ -14,17 +14,21 @@ var chapter: int = 1
 
 # ---------- 玩家（总控 / 念念） ----------
 var controller_name: String = "念念"
-var energy: int = 100
-var max_energy: int = 100
+var energy: int = 8
+var max_energy: int = 8
+var slots: int = 3
+var slots_left: int = 3
 var memory_capacity: int = 1
 var kept_memory_ids: Array = []
 var memory_candidates: Array = []
 
 # ---------- 熊猫 ----------
 var panda_name: String = ""
+var selected_panda: String = ""
 var panda_mood: String = "normal"
 var panda_fatigue: int = 0
 var comforted_today: bool = false
+var m05_remembered_today: bool = false
 
 # ---------- 家宅 ----------
 var lamp_name: String = ""
@@ -83,6 +87,22 @@ func _get_script() -> Dictionary:
 	return _script_data
 
 
+# ---------- 只读查询（供 UI 渲染） ----------
+func get_memories() -> Array:
+	return _get_memories().get("memories", [])
+
+
+func get_memory(memory_id: String) -> Dictionary:
+	for entry: Dictionary in get_memories():
+		if entry.get("id", "") == memory_id:
+			return entry
+	return {}
+
+
+func get_tasks() -> Array:
+	return _get_tasks().get("tasks", [])
+
+
 func _get_memory_keep_cost(memory_id: String) -> int:
 	var data: Dictionary = _get_memories()
 	var memories: Array = data.get("memories", [])
@@ -113,12 +133,24 @@ func set_names(panda: String, controller: String) -> void:
 	controller_name = controller
 
 
+func select_panda(panda_id: String, new_name: String) -> void:
+	selected_panda = panda_id
+	panda_name = new_name
+
+
 # ---------- 电 ----------
 func spend_energy(amount: int) -> bool:
 	if amount < 0:
 		amount = 0
 	if energy >= amount:
 		energy -= amount
+		return true
+	return false
+
+
+func spend_slot() -> bool:
+	if slots_left > 0:
+		slots_left -= 1
 		return true
 	return false
 
@@ -138,6 +170,11 @@ func keep_memory(memory_id: String) -> bool:
 	kept_memory_ids.append(memory_id)
 	memory_candidates.erase(memory_id)
 	return true
+
+
+func delete_memory(memory_id: String) -> void:
+	kept_memory_ids.erase(memory_id)
+	memory_candidates.append(memory_id)
 
 
 func has_kept_memory(memory_id: String) -> bool:
@@ -163,6 +200,11 @@ func submit_task(task_id: String) -> bool:
 	var cost: int = int(task.get("energy", 0))
 	if not spend_energy(cost):
 		return false
+	var slot_cost: int = int(task.get("slot", 1))
+	if slots_left < slot_cost:
+		energy += cost
+		return false
+	slots_left -= slot_cost
 	tasks_status[task_id] = "done"
 	jg += int(task.get("jg", 0))
 	var memory_id: String = str(task.get("memory", ""))
@@ -198,6 +240,11 @@ func can_proceed_act1() -> bool:
 	return leak_found and leak_fixed and lamp_name != "" and comforted_today
 
 
+## 破局两步：昨天夜里留了 M05（念念记得它受委屈）+ 今天又主动安慰。
+func can_break_loop() -> bool:
+	return m05_remembered_today and comforted_today
+
+
 # ---------- 便条与重启 ----------
 func add_daily_note() -> void:
 	notes.append({"day": day_count, "text": _get_daily_note_text()})
@@ -205,6 +252,9 @@ func add_daily_note() -> void:
 
 func start_new_day() -> void:
 	day_count += 1
+	energy = max_energy
+	slots_left = slots
+	m05_remembered_today = has_kept_memory("M05")
 	memory_candidates = []
 	comforted_today = false
 	panda_mood = "normal"
@@ -220,9 +270,12 @@ func serialize() -> Dictionary:
 		"chapter": chapter,
 		"controller_name": controller_name,
 		"energy": energy,
+		"slots_left": slots_left,
+		"m05_remembered_today": m05_remembered_today,
 		"kept_memory_ids": kept_memory_ids,
 		"memory_candidates": memory_candidates,
 		"panda_name": panda_name,
+		"selected_panda": selected_panda,
 		"panda_mood": panda_mood,
 		"comforted_today": comforted_today,
 		"lamp_name": lamp_name,
@@ -242,10 +295,13 @@ func deserialize(data: Dictionary) -> void:
 	phase = str(data.get("phase", "S00"))
 	chapter = int(data.get("chapter", 1))
 	controller_name = str(data.get("controller_name", "念念"))
-	energy = int(data.get("energy", 100))
+	energy = int(data.get("energy", 8))
+	slots_left = int(data.get("slots_left", slots))
+	m05_remembered_today = bool(data.get("m05_remembered_today", false))
 	kept_memory_ids = data.get("kept_memory_ids", [])
 	memory_candidates = data.get("memory_candidates", [])
 	panda_name = str(data.get("panda_name", ""))
+	selected_panda = str(data.get("selected_panda", ""))
 	panda_mood = str(data.get("panda_mood", "normal"))
 	comforted_today = bool(data.get("comforted_today", false))
 	lamp_name = str(data.get("lamp_name", ""))
@@ -286,10 +342,13 @@ func reset_for_new_game() -> void:
 	phase = "S00"
 	chapter = 1
 	controller_name = "念念"
-	energy = 100
+	energy = 8
+	slots_left = slots
+	m05_remembered_today = false
 	kept_memory_ids = []
 	memory_candidates = []
 	panda_name = ""
+	selected_panda = ""
 	panda_mood = "normal"
 	panda_fatigue = 0
 	comforted_today = false
