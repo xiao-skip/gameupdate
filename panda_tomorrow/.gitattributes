@@ -1,0 +1,12 @@
+# 跨平台协作：仓库内统一 LF（Godot 在 Windows 下读写 LF 没问题）
+* text=auto eol=lf
+
+# 常见二进制资源不做换行转换
+*.png binary
+*.jpg binary
+*.webp binary
+*.ttf binary
+*.otf binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
