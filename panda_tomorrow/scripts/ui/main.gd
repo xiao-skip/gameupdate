@@ -27,6 +27,9 @@ var _fade: ColorRect
 var _day_ui: VBoxContainer     # 白天交互区（任务面板 + 侧栏）
 var _act1_panel: PanelContainer
 
+## 破局待播：夜里留了 M05 且四条件满足 → restart → 次日傍晚播 S04（A-Q5）。
+var _breakthrough_pending := false
+
 ## 冒烟模式：打字机全关 + 对话自动推进。
 var _smoke := false
 var _smoke_passed := 0
@@ -200,6 +203,12 @@ func _day() -> void:
 func _evening() -> void:
 	_stage = Stage.EVENING
 	_set_day_ui_visible(false)
+	if _breakthrough_pending:
+		# A-Q5 破局：念念带着《它被骂了》的记忆，不等它开口先说话（S04）。
+		_breakthrough_pending = false
+		await _play_s04()
+		_act1_end(true)
+		return
 	if not GameState.comforted:
 		await _play_s02b()
 	else:
@@ -220,7 +229,12 @@ func _night() -> void:
 func _on_night_confirmed(kept_id: String) -> void:
 	if GameState.can_proceed_act1():
 		await _play_s03()
-		_act1_end()
+		if GameState.kept_id == "M05":
+			# A-Q5：留了《它被骂了》→ 次日 S04 破局（第一幕真结局线）。
+			_breakthrough_pending = true
+			_do_restart()
+		else:
+			_act1_end()
 	else:
 		_do_restart()
 
@@ -292,11 +306,19 @@ func _play_s03() -> void:
 	await _dialog.show_line("旁白", "它不是第一次受委屈，也不是第一次告诉你。而你，每天都忘。")
 
 
+## S04 破局（队友 Junsheng-Wang2026 撰写，C 的 script.json）：
+## 念念带着《它被骂了》的记忆，次日不等它开口先说话——跳出循环，第一幕真结局。
+func _play_s04() -> void:
+	var scene: Dictionary = Dialogue.resolve_scene("S04", GameState.panda_preset)
+	for line in scene.get("lines", []):
+		await _dialog.show_line(String(line.get("speaker", "")), String(line.get("text", "")))
+
+
 # ============================================================
 # 第一幕完
 # ============================================================
 
-func _act1_end() -> void:
+func _act1_end(true_end: bool = false) -> void:
 	_stage = Stage.ACT1_END
 	_act1_panel = PanelContainer.new()
 	_act1_panel.set_anchors_preset(PRESET_FULL_RECT)
@@ -320,7 +342,10 @@ func _act1_end() -> void:
 	col.add_child(title)
 
 	var sub := Label.new()
-	sub.text = "「它不是第一次说。」"
+	if true_end:
+		sub.text = "「它不是第一次说这句话。可念念第一次，真的记住了。」"
+	else:
+		sub.text = "「它不是第一次说。」"
 	sub.add_theme_font_size_override("font_size", 24)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_color_override("font_color", Color(0.8, 0.78, 0.7))
@@ -341,13 +366,22 @@ func _act1_end() -> void:
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 16)
 	col.add_child(actions)
-	var cont := Button.new()
-	cont.text = "继续下一天"
-	cont.custom_minimum_size = Vector2(160, 48)
-	cont.pressed.connect(func() -> void:
-		_act1_panel.queue_free()
-		_do_restart())
-	actions.add_child(cont)
+	if not true_end:
+		var cont := Button.new()
+		cont.text = "继续下一天"
+		cont.custom_minimum_size = Vector2(160, 48)
+		cont.pressed.connect(func() -> void:
+			_act1_panel.queue_free()
+			_do_restart())
+		actions.add_child(cont)
+	else:
+		var stay := Button.new()
+		stay.text = "留在这个家"
+		stay.custom_minimum_size = Vector2(160, 48)
+		stay.pressed.connect(func() -> void:
+			_act1_panel.queue_free()
+			_day())
+		actions.add_child(stay)
 	var fresh := Button.new()
 	fresh.text = "从头开始"
 	fresh.custom_minimum_size = Vector2(160, 48)
@@ -357,8 +391,8 @@ func _act1_end() -> void:
 		_intro())
 	actions.add_child(fresh)
 
-	if _smoke:
-		# 冒烟：不留停在按钮，直接走「继续下一天」。
+	if _smoke and not true_end:
+		# 冒烟：循环结局不停留在按钮，直接走「继续下一天」；真结局是终局，停住由冒烟断言接管。
 		_act1_panel.queue_free()
 		_do_restart()
 
@@ -402,6 +436,11 @@ func _on_object_clicked(obj_id: String) -> void:
 			await _play_s02()
 		"fridge":
 			_notes_browser.open()
+			# 翻便条的领悟（破局路径）：安慰过它 + 冰箱上有便条 → 重新意识到
+			# 「它不是第一次受委屈」→ M05 重新进今晚候选（走 A 的公共接口）。
+			if GameState.comforted and GameState.notes.size() >= 1:
+				GameState.add_memory_candidate("M05")
+				_toast("一沓几乎一样的便条。它不是第一次受委屈，也不是第一次告诉你。")
 		"valve":
 			_do_task("T04")
 
@@ -508,23 +547,32 @@ func _run_smoke() -> void:
 	_smoke_check("回水后：净水 2 / 待回收 0（守恒）", GameState.clean_water == 2 and GameState.pending_water == 0)
 	_smoke_check("water_returned 已置位（湿脚印解除）", GameState.water_returned and not GameState.has_wet_footprints())
 
-	# ---- 第 2 天傍晚（简短版）→ 夜 → 反转 ----
+	# ---- 第 2 天傍晚（简短版）→ 夜 → 反转 → 破局线 ----
+	# 翻冰箱便条（A-Q4 + 破局领悟：M05 重新进候选）。
+	_on_object_clicked("fridge")
+	await get_tree().process_frame
+	_notes_browser.closed.emit()
+	_smoke_check("翻便条领悟：M05 重新进候选", GameState.memory_candidates.has("M05"))
 	await _evening()
-	# 夜里什么都不留（保持 M01）→ can_proceed_act1 → S03（翻便条）。
+	# 夜里改留 M05《它被骂了》（A-Q5：次日触发「你还记得」）→ can_proceed → S03。
+	_night_memory.keep("M05")
+	_smoke_check("夜间改选：pending 从 M01 改到 M05", _night_memory.get_pending() == "M05")
 	_night_memory.confirm()
+	_smoke_check("A-Q5：留了 M05《它被骂了》", GameState.kept_id == "M05")
 	# S03 播到「翻便条」处等玩家合上冰箱门——冒烟替玩家关。
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_notes_browser.closed.emit()
-	var to_end: bool = await _wait_stage(Stage.ACT1_END)
-	_smoke_check("can_proceed_act1 四条件满足后播 S03 反转", GameState.can_proceed_act1() and to_end)
-
-	# ---- 幕完「继续下一天」（冒烟 auto：自动 restart）----
+	# S03 完 → 破局待播 → restart → 第 3 天白天。
 	var to_day3: bool = await _wait_stage(Stage.DAY)
-	_smoke_check("幕完继续：回到白天（第 3 天）", to_day3)
+	_smoke_check("S03 反转后 restart 进入第 3 天", to_day3 and GameState.can_proceed_act1())
+
+	# ---- 第 3 天傍晚：S04 破局（念念带记忆主动开口）→ 第一幕真结局 ----
+	await _evening()
+	var to_end: bool = await _wait_stage(Stage.ACT1_END)
+	_smoke_check("A-Q5：次日 S04 破局 → 第一幕真结局", to_end and GameState.kept_id == "M05")
 	_smoke_check("A-Q4：便条 2 张、日期 1→2 递增", GameState.notes.size() == 2
 		and int(GameState.notes[0].get("date", 0)) == 1 and int(GameState.notes[1].get("date", 0)) == 2)
-	_smoke_check("继续循环：第 3 天电量回满", GameState.day_number() == 3 and GameState.energy == 8)
 
 	# ---- A-Q8：退出重进（家光/便条/槽不丢）----
 	var jg_before := GameState.jg
