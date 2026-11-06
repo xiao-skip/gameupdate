@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="panda_tomorrow"
-config/description="《熊猫，明天见》第一幕：它不是第一次说。你是每天失忆的全屋总控，照看一只在邮局上班的普通熊猫。"
+config/description="《熊猫，明天见》第一幕：它不是第一次说。你是每天失忆的超级 AI 念念，照看一只与你灵魂镜像绑定的熊猫人。"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7")
 config/icon="res://icon.svg"
@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameState="*res://scripts/core/game_state.gd"
+Dialogue="*res://scripts/content/dialogue.gd"
 
 [display]
 

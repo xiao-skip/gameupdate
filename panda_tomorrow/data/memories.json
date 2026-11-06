@@ -1,30 +1,9 @@
 {
-	"version": 1,
-	"comment": "记忆定义表。v0 骨架只放 M01/M03/M05（M02/M04 及后续留空待加，结构支持直接追加）。keep_cost = 留住这条记忆要扣的电量：留名字，就不省电。type: fact=事实 / name=名字 / experience=经历。",
-	"memories": [
-		{
-			"id": "M01",
-			"type": "fact",
-			"title": "暖炉漏水了",
-			"desc": "水从暖炉的密封口漏出来，湿脚印就是这么来的。已经完成回水。",
-			"phase": "S01",
-			"keep_cost": 2.0
-		},
-		{
-			"id": "M03",
-			"type": "name",
-			"title": "不加班灯",
-			"desc": "和〔熊猫名〕一起给那盏常亮的灯起的名字。灯负责亮，我们负责休息。",
-			"phase": "S02",
-			"keep_cost": 1.0
-		},
-		{
-			"id": "M05",
-			"type": "experience",
-			"title": "它今天被骂了",
-			"desc": "老板把一摞没寄出去的信算在〔熊猫名〕头上，当众骂了它。它回家很晚，诉了苦，你安慰了它。留下这条记忆不省电，却是它第二天唯一不用重新解释的救赎。",
-			"phase": "S02b",
-			"keep_cost": 5.0
-		}
-	]
+  "version": 1,
+  "comment": "记忆定义表。keep_cost = 留住这条记忆要扣的电量（留记忆 = 花电）。type: fact=事实 / name=名字 / experience=经历。",
+  "memories": [
+    {"id": "M01", "type": "fact", "title": "暖炉漏水了", "desc": "水从暖炉的密封口漏出来，湿脚印就是这么来的。已经修好密封口。", "phase": "S01", "keep_cost": 2},
+    {"id": "M03", "type": "name", "title": "不加班灯", "desc": "和它一起给那盏常亮的灯起的名字。灯负责亮，我们负责休息。", "phase": "S02", "keep_cost": 1},
+    {"id": "M05", "type": "experience", "title": "它今天受委屈了", "desc": "它今天在外面受了委屈，回家很晚，诉了苦，你安慰了它。留下这条记忆不省电，却是它第二天唯一不用重新解释的救赎。", "phase": "S02b", "keep_cost": 5}
+  ]
 }

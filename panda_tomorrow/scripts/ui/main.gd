@@ -1,6 +1,5 @@
 extends Node2D
-## 第一幕核心测试：int 能量 + keep_cost + 派工 + 进度 + 存档序列化 + 重启
-## 用 Godot headless 跑：godot --headless --path <项目>
+## 第一幕核心测试：int 能量 + keep_cost + 派工 + 进度 + 存档序列化 + 重启 + 内容/换皮
 
 var failures: int = 0
 
@@ -86,6 +85,40 @@ func _ready() -> void:
 	check("重启后 kept 保留 M01", GameState.has_kept_memory("M01"))
 	check("重启后候选清空", GameState.memory_candidates.is_empty())
 	check("重启后 comforted 清空", not GameState.comforted_today)
+
+	# --- 内容 / 换皮（C） ---
+	var ids: Array = Dialogue.get_panda_ids()
+	check("加载 4 只熊猫", ids.size() == 4)
+	var need: Array = ["name", "gender", "job", "subspecies", "color", "personality", "late_return", "grievance", "self_doubt", "comfort_c", "note_carrier", "next_day_react"]
+	var fields_ok: bool = true
+	for pid in ids:
+		var prof: Dictionary = Dialogue.get_profile(pid)
+		for f in need:
+			if str(prof.get(f, "")) == "":
+				fields_ok = false
+	check("4 只熊猫字段齐全", fields_ok)
+
+	var s00: Dictionary = Dialogue.resolve_scene("S00", "huahua")
+	var name_ok: bool = false
+	for ln: Dictionary in s00.get("lines", []):
+		if str(ln.get("speaker", "")) == "小咪" and "花花" in str(ln.get("text", "")):
+			name_ok = true
+	check("S00 替换熊猫名=花花", name_ok)
+
+	var comforts: Array = []
+	for pid in ids:
+		var s02b: Dictionary = Dialogue.resolve_scene("S02b", pid)
+		for c: Dictionary in s02b.get("comfort_choices", []):
+			if str(c.get("id", "")) == "C":
+				comforts.append(str(c.get("text", "")))
+	check("4 只熊猫 comfort_c 各异", comforts.size() == 4 and comforts[0] != comforts[1] and comforts[1] != comforts[2] and comforts[2] != comforts[3])
+
+	var s03: Dictionary = Dialogue.resolve_scene("S03", "keke")
+	var note_ok: bool = false
+	for ln: Dictionary in s03.get("lines", []):
+		if "备课本" in str(ln.get("text", "")):
+			note_ok = true
+	check("S03 替换便条载体=备课本", note_ok)
 
 	# --- 汇总 ---
 	print("")
