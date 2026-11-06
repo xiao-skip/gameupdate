@@ -1,0 +1,42 @@
+{
+	"version": 1,
+	"comment": "任务定义表。v0 骨架只放 T01-T04，结构支持直接追加 T05/T06。运行时状态（locked/available/done）存在 GameState.tasks_status，不在本文件。",
+	"tasks": [
+		{
+			"id": "T01",
+			"name": "打扫屋子",
+			"robot": "小咪",
+			"type": "clean",
+			"desc": "小咪负责打扫，把屋子收拾干净——〔熊猫名〕还没找到放脚的地方呢。",
+			"unlock_phase": "S00",
+			"effect": "S01 触发条件之一（清洁完成）"
+		},
+		{
+			"id": "T02",
+			"name": "生活准备",
+			"robot": "帕丁",
+			"type": "life",
+			"desc": "帕丁负责生活准备：暖炉待命，晚餐就绪。",
+			"unlock_phase": "S00",
+			"effect": "S01 触发条件之二（生活完成）"
+		},
+		{
+			"id": "T03",
+			"name": "教学微课",
+			"robot": "多吉",
+			"type": "teach",
+			"desc": "多吉的教学派工与微课，自由派工期间可选。",
+			"unlock_phase": "S00",
+			"effect": "自由派工可选任务"
+		},
+		{
+			"id": "T04",
+			"name": "查看漏水，完成回水",
+			"robot": "团圆",
+			"type": "fix",
+			"desc": "S01 湿脚印之后：S01 的 A/B 选项都通向暖炉密封口，完成回水。",
+			"unlock_phase": "S01",
+			"effect": "完成后生成记忆 M01《暖炉漏水了》"
+		}
+	]
+}
