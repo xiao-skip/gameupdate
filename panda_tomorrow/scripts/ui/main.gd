@@ -34,7 +34,8 @@ func _ready() -> void:
 	print("chapter_flags = ", GameState.chapter_flags)
 
 	print("=== [2] 存根函数调用不报错 ===")
-	GameState.set_names("团团", "团圆")
+	GameState.set_names("huahua", "花花", "念念")
+	print("get_panda_profile 返回默认值: ", GameState.get_panda_profile())
 	GameState.start_new_day()
 	GameState.unlock_task("T01")
 	GameState.complete_task("T01")
@@ -56,6 +57,7 @@ func _ready() -> void:
 	_check_json("res://data/tasks.json")
 	_check_json("res://data/memories.json")
 	_check_json("res://data/script.json")
+	_check_json("res://data/pandas.json")
 
 	print("=== v0 骨架验收跑完，退出 ===")
 	get_tree().quit()
@@ -77,4 +79,6 @@ func _check_json(path: String) -> void:
 		keys = (data["memories"] as Array).size()
 	elif data is Dictionary and data.has("scenes"):
 		keys = (data["scenes"] as Array).size()
+	elif data is Dictionary and data.has("presets"):
+		keys = (data["presets"] as Array).size()
 	print("[OK] ", path, " 解析成功，条目数 = ", keys)

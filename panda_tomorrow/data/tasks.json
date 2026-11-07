@@ -1,6 +1,6 @@
 {
-	"version": 1,
-	"comment": "任务定义表。v0 骨架只放 T01-T04，结构支持直接追加 T05/T06。运行时状态（locked/available/done）存在 GameState.tasks_status，不在本文件。",
+	"version": 2,
+	"comment": "任务定义表（V2.0 四熊猫参数化版）。第一幕只放 T01-T04，结构支持直接追加 T05/T06。运行时状态（locked/available/done）存在 GameState.tasks_status，不在本文件。energy_cost 为派工耗电（对应分工文档「2 电/任务」的规则，此处先按 1 电/件记录，数值改动只改本字段）。",
 	"tasks": [
 		{
 			"id": "T01",
@@ -9,6 +9,7 @@
 			"type": "clean",
 			"desc": "小咪负责打扫，把屋子收拾干净——〔熊猫名〕还没找到放脚的地方呢。",
 			"unlock_phase": "S00",
+			"energy_cost": 1,
 			"effect": "S01 触发条件之一（清洁完成）"
 		},
 		{
@@ -18,6 +19,7 @@
 			"type": "life",
 			"desc": "帕丁负责生活准备：暖炉待命，晚餐就绪。",
 			"unlock_phase": "S00",
+			"energy_cost": 1,
 			"effect": "S01 触发条件之二（生活完成）"
 		},
 		{
@@ -25,18 +27,21 @@
 			"name": "教学微课",
 			"robot": "多吉",
 			"type": "teach",
-			"desc": "多吉的教学派工与微课，自由派工期间可选。",
+			"desc": "多吉的教学派工与微课，自由派工期间可选。情感节奏优先，微课保持可选，不打断情感场。",
 			"unlock_phase": "S00",
+			"energy_cost": 1,
 			"effect": "自由派工可选任务"
 		},
 		{
 			"id": "T04",
 			"name": "查看漏水，完成回水",
-			"robot": "团圆",
+			"robot": "念念",
 			"type": "fix",
 			"desc": "S01 湿脚印之后：S01 的 A/B 选项都通向暖炉密封口，完成回水。",
 			"unlock_phase": "S01",
-			"effect": "完成后生成记忆 M01《暖炉漏水了》"
+			"energy_cost": 1,
+			"effect": "完成后生成记忆候选 M01《暖炉漏水了》"
 		}
-	]
+	],
+	"extensible_note": "后续章节追加 T05 改装 / T06 清滤芯，只需在 tasks 数组加一行，submit_task 读表即可，不改代码。"
 }

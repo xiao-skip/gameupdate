@@ -1,13 +1,15 @@
 extends Node
 ## ============================================================
-## GameState —— 全局游戏状态存根（v0 骨架，不含任何游戏逻辑）
+## GameState —— 全局游戏状态（v0 骨架 + V2.0 四熊猫参数化）
 ##
 ## 《熊猫，明天见》第一幕「它不是第一次说」
-## 你（团圆，全屋智能总控）每天失忆，照看一只在邮局上班的普通熊猫。
-## 这天它下班被老板当众骂了，你安慰它、一起给灯起名；
-## 夜里翻冰箱便条才发现——这不是它第一次被骂，也不是它第一次告诉你。
+## 你（念念，来自 2046 年的超级人工智能 / 灵魂镜像）每天 0 点失忆，
+## 只能把一件最重要的事写进「沉淀」。你照看的熊猫记得一切，一直在等你记住它。
+## 这天它下班受了委屈，你安慰它、一起给灯起名；
+## 夜里翻「树洞角落」那沓便条才发现——这不是它第一次受委屈，也不是它第一次告诉你。
 ##
-## 角色：团圆=玩家/总控；多吉=教师机器人；帕丁=生活管家；小咪=清洁机器人；熊猫=被选择的那只
+## 角色：念念=玩家/灵魂镜像；多吉=教学与诊断；帕丁=生活；小咪=清洁；
+##       熊猫=四选一（花花/壮壮/灵灵/可可，见 data/pandas.json）
 ##
 ## 通过 project.godot 的 [autoload] 注册为全局单例，任何脚本直接 GameState.xxx 访问。
 ## 本阶段：只声明字段（含预留）+ 函数签名与注释 + 默认返回值。
@@ -27,8 +29,8 @@ var chapter: int = 1
 
 # ---------- 总控（玩家） ----------
 
-## 总控名。S00 命名后写入，运行时替换所有台词里的〔总控名〕。默认"团圆"。
-var controller_name: String = "团圆"
+## 总控名。S00 命名后写入，运行时替换所有台词里的〔总控名〕。默认"念念"。
+var controller_name: String = "念念"
 
 ## 剩余电量。主题是"留省电，还是留名字"——留住记忆要费电。
 var energy: float = 100.0
@@ -36,19 +38,23 @@ var energy: float = 100.0
 ## 电量上限（预留：后续章节可调）。
 var max_energy: float = 100.0
 
-## 每天能稳定留下的记忆条数。多吉在 S00 说："今天能稳定留下一件事。其他的，我们慢慢来。"
+## 每天能稳定留下的记忆条数。多吉在 S00 说："你的记忆每天 0 点刷新，只能把一件最重要的事写进沉淀。"
 var memory_capacity: int = 1
 
 ## 跨天留住的记忆 id（"M01"/"M03"/"M05"…）。总控失忆后，这是仅存的东西。
 var kept_memory_ids: Array = []
 
-## 今夜的记忆候选（S02b 之后出现《它今天被骂了》等）。夜里选记忆界面用，次日失忆时清空。
+## 今夜的记忆候选（S02b 之后出现《它今天受委屈了》等）。夜里选记忆界面用，次日失忆时清空。
 var memory_candidates: Array = []
 
 # ---------- 熊猫 ----------
 
 ## 熊猫名。S00 选择熊猫并命名后写入，替换台词里的〔熊猫名〕。
 var panda_name: String = ""
+
+## 熊猫预设 id（"huahua"/"zhuangzhuang"/"lingling"/"keke"）。
+## 四只共用同一场景骨架，运行时按此 id 去 data/pandas.json 取换皮参数，不产生独立分支。
+var panda_preset: String = ""
 
 ## 熊猫情绪："normal"（平常）/"low"（低落，回家很晚）/"calm"（被安慰后平复）。
 var panda_mood: String = "normal"
@@ -79,11 +85,12 @@ var leak_fixed: bool = false
 ## 暖炉是否已启动（S01：地面"已打扫干净"后启动）。
 var heater_on: bool = false
 
-## 冰箱便条张数。每日重启自动 +1，日期递增、内容几乎一样；
+## 树洞角落的便条张数。每日重启自动 +1，日期递增、内容几乎一样；
 ## S03 玩家亲手翻看、自己数出"已经 N 张了"，反转由玩家拼出来，不靠旁白点破。
+## 便条载体与不变细节按熊猫换皮，见 data/pandas.json 的 note_carrier / note_constant。
 var note_count: int = 0
 
-## 反转是否已揭示（S03 翻完那沓便条后置 true：它不是第一次被骂）。
+## 反转是否已揭示（S03 翻完那沓便条后置 true：它不是第一次受委屈）。
 var revealed_loop: bool = false
 
 # ---------- 任务派工 ----------
@@ -108,15 +115,22 @@ var chapter_flags: Dictionary = {}
 # 函数存根：只写签名 + 注释 + 默认返回值，逻辑由 B/C 补齐
 # ============================================================
 
-## S00：选择熊猫并命名。panda 写入 panda_name（替换〔熊猫名〕），
-## controller 写入 controller_name（替换〔总控名〕，默认"团圆"）。
-func set_names(panda: String, controller: String) -> void:
+## S00：选择熊猫并命名。preset 写入 panda_preset（决定换皮参数，见 data/pandas.json），
+## panda 写入 panda_name（替换〔熊猫名〕），
+## controller 写入 controller_name（替换〔总控名〕，默认"念念"）。
+func set_names(preset: String, panda: String, controller: String) -> void:
 	pass
+
+
+## 取当前熊猫的换皮参数（data/pandas.json 里该 preset 的整条记录）。
+## 剧本里 {panda.xxx} 占位即由本函数返回的字典取值。未选熊猫时返回空字典。
+func get_panda_profile() -> Dictionary:
+	return {}
 
 
 ## 每日重启，"环"的闭合点：day_count +1；执行失忆——清空当天状态
 ## （memory_candidates、comforted_today、panda_mood 回落），kept_memory_ids 原样保留；
-## 冰箱自动多一张便条（note_count +1，内容模板见 data/script.json 的 daily_note）；
+## 树洞角落自动多一张便条（note_count +1，内容模板见 data/script.json 的 daily_note）；
 ## phase 回到当日入口，等待熊猫"又从头说起"。
 func start_new_day() -> void:
 	pass
@@ -134,7 +148,7 @@ func complete_task(task_id: String) -> void:
 
 
 ## 生成记忆候选：把 memory_id 追加进 memory_candidates，供夜里选记忆。
-## 例：S01 回水后生成 M01；S02 给灯命名后生成 M03；S02b 安慰后生成 M05《它今天被骂了》。
+## 例：S01 回水后生成 M01；S02 给灯命名后生成 M03；S02b 安慰后生成 M05《它今天受委屈了》。
 func add_memory_candidate(memory_id: String) -> void:
 	pass
 
@@ -146,7 +160,7 @@ func keep_memory(memory_id: String) -> bool:
 	return false
 
 
-## 查询某条记忆是否已留住。次日分支用：留了 M05 → 熊猫轻声"……你还记得。"；
+## 查询某条记忆是否已留住。次日分支用：留了 M05 → 熊猫轻声（按性格换皮）；
 ## 没留 → 它又要从头说起，这一次语气更疲惫。
 func has_kept_memory(memory_id: String) -> bool:
 	return false
@@ -159,7 +173,7 @@ func spend_energy(amount: float) -> bool:
 
 ## 安慰熊猫（S02b 安慰选项 A/B/C 之后）：comforted_today = true，
 ## panda_mood 由 low 转为 calm（"……谢谢你听我说。"），
-## 并生成经历记忆候选 M05《它今天被骂了》。
+## 并生成经历记忆候选 M05《它今天受委屈了》。
 func comfort_panda() -> void:
 	pass
 
@@ -170,8 +184,9 @@ func set_lamp_name(new_name: String) -> void:
 	pass
 
 
-## 冰箱加一张便条：note_count +1。内容取 data/script.json 的 daily_note 模板，
-## 日期递增、内容几乎一样（"今天老板又骂我，把信弄丢了。可那不是我弄丢的。"）。
+## 树洞角落加一张便条：note_count +1。内容取 data/script.json 的 daily_note 模板，
+## 日期递增、内容几乎一样（"今天又在外面受了委屈。可那不是我该受的。"）。
+## 载体与不变细节按熊猫换皮（note_carrier / note_constant）。
 func add_daily_note() -> void:
 	pass
 
