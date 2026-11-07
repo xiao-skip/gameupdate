@@ -1,6 +1,6 @@
 {
 	"version": 2,
-	"comment": "任务定义表（V2.0 四熊猫参数化版）。第一幕只放 T01-T04，结构支持直接追加 T05/T06。运行时状态（locked/available/done）存在 GameState.tasks_status，不在本文件。energy_cost 为派工耗电（对应分工文档「2 电/任务」的规则，此处先按 1 电/件记录，数值改动只改本字段）。",
+	"comment": "任务定义表（V2.0 四熊猫参数化版）。第一幕只放 T01-T04，结构支持直接追加 T05/T06。运行时状态（locked/available/done）存在 GameState.tasks_status，不在本文件。energy_cost = 派工耗电，按分工文档 A-Q1 验收：打扫2+生活2+微课2+回水1 = 7 电，日电量 8，剩 1。",
 	"tasks": [
 		{
 			"id": "T01",
@@ -9,7 +9,7 @@
 			"type": "clean",
 			"desc": "小咪负责打扫，把屋子收拾干净——〔熊猫名〕还没找到放脚的地方呢。",
 			"unlock_phase": "S00",
-			"energy_cost": 1,
+			"energy_cost": 2,
 			"effect": "S01 触发条件之一（清洁完成）"
 		},
 		{
@@ -19,7 +19,7 @@
 			"type": "life",
 			"desc": "帕丁负责生活准备：暖炉待命，晚餐就绪。",
 			"unlock_phase": "S00",
-			"energy_cost": 1,
+			"energy_cost": 2,
 			"effect": "S01 触发条件之二（生活完成）"
 		},
 		{
@@ -29,7 +29,7 @@
 			"type": "teach",
 			"desc": "多吉的教学派工与微课，自由派工期间可选。情感节奏优先，微课保持可选，不打断情感场。",
 			"unlock_phase": "S00",
-			"energy_cost": 1,
+			"energy_cost": 2,
 			"effect": "自由派工可选任务"
 		},
 		{
