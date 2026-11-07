@@ -1,163 +1,322 @@
 {
-	"version": 2,
-	"comment": "逐场脚本数据（V2.0 四熊猫参数化版）。每条场景带 phase 字段，对话系统按 phase 过滤。台词中〔熊猫名〕〔总控名〕为运行时替换；{panda.xxx} 为从 data/pandas.json 按 panda_preset 取字段替换；type=stage 为演出提示，不进对话框。",
-	"substitutions": {
-		"〔熊猫名〕": "GameState.panda_name",
-		"〔总控名〕": "GameState.controller_name"
-	},
-	"daily_note": {
-		"comment": "树洞角落便条模板。每日重启自动多一张，日期递增、内容几乎一样。载体与不变细节按熊猫换皮，见 data/pandas.json 的 note_carrier / note_constant。",
-		"template": "今天又在外面受了委屈。可那不是我该受的。",
-		"variant": "今天又受了委屈。",
-		"growth": "每日重启 +1 张，日期递增（昨天／前天／更早…）",
-		"location": "树洞角落"
-	},
-	"scenes": [
-		{
-			"phase": "S00",
-			"title": "降临",
-			"trigger": "选择熊猫伙伴并完成绑定后",
-			"duration_hint": "目标演出约 40 秒",
-			"lines": [
-				{ "type": "stage", "text": "黑屏。2046 年的数据流如星河流淌。一封《守护协议》缓缓展开：目的地——竹城，环巷 37 号；绑定期限——终身。" },
-				{ "type": "say", "speaker": "多吉", "text": "灵魂镜像绑定完成。从现在起，你是它唯一的镜像，它是你唯一的世界。", "tag": "画外" },
-				{ "type": "stage", "text": "总控屏亮起。熊猫把爪子贴在屏幕上，有些紧张。" },
-				{ "type": "say", "speaker": "熊猫", "text": "绑定之后……你听得见我说话？" },
-				{ "type": "say", "speaker": "玩家", "text": "嗯。" },
-				{ "type": "say", "speaker": "熊猫", "text": "那我叫你念念，好不好？念念不忘的念念。" },
-				{ "type": "say", "speaker": "熊猫", "text": "〔总控名〕……好，这次换我记住你。", "condition": "player_renamed" },
-				{ "type": "stage", "text": "三枚终端亮起，依次报到。" },
-				{ "type": "say", "speaker": "多吉", "text": "我负责教学与诊断。有一件事你要知道：你的记忆每天 0 点刷新，只能把一件最重要的事写进沉淀。其他的，我们替你记今天，记不了明天。" },
-				{ "type": "say", "speaker": "帕丁", "text": "我负责生活，小咪负责打扫干净。顺序你来安排。" },
-				{ "type": "say", "speaker": "旧录音", "text": "早上好，念念。照顾好这个家。最后一盏灯，留给还没回家的人。", "tag": "沙沙声", "note": "第三幕揭晓：录音者就是玩家自己" },
-				{ "type": "say", "speaker": "小咪", "text": "先把这里收拾好吧，〔熊猫名〕还没找到放脚的地方呢。" }
-			],
-			"options": [],
-			"outputs": [
-				"解锁 T01",
-				"进入自由派工",
-				"记忆规则前置教学完成，为结尾反转蓄力"
-			]
-		},
-		{
-			"phase": "S01",
-			"title": "湿脚印",
-			"trigger": "完成第一项清洁与生活任务后",
-			"lines": [
-				{ "type": "stage", "text": "地面亮起「已打扫干净」。暖炉启动，几滴水流过，熊猫留下湿脚印。" },
-				{ "type": "say", "speaker": "小咪", "text": "咦，我刚刚已经打扫干净了。" }
-			],
-			"options": [
-				{ "id": "A", "text": "先找水从哪里来。", "effect": "点亮暖炉密封口", "outcome": "同 B" },
-				{ "id": "B", "text": "小咪，我们一起看看。", "effect": "点亮暖炉密封口", "outcome": "同 A" }
-			],
-			"after_option": [
-				{ "type": "say", "speaker": "多吉", "text": "做完一件事，还要看它把什么送到了别处。" }
-			],
-			"outputs": [
-				"漏水标记（leak_found = true）",
-				"完成回水后生成记忆候选 M01《暖炉漏水了》"
-			],
-			"design_note": "本幕是玩法教学，同时种下「环」的主题：修好一处，去向也会改变。不要求玩家立刻重新清洁；新湿痕保留作漏水证据，奖励不重复结算。"
-		},
-		{
-			"phase": "S02b",
-			"title": "它回家很晚",
-			"trigger": "傍晚，熊猫下班回家（核心情感场）",
-			"lines": [
-				{ "type": "stage", "text": "门响。熊猫比平时回来得晚。" },
-				{ "type": "stage", "text": "{panda.late_home_action}。" }
-			],
-			"options": [
-				{ "id": "A", "text": "你脸色不对，怎么了？", "tone": "直接关心", "next": "confession" },
-				{ "id": "B", "text": "先坐下，我给你倒杯水。", "tone": "行动安抚", "next": "confession" }
-			],
-			"branches": {
-				"confession": {
-					"comment": "两项都会引出诉苦，只是语气不同。",
-					"lines": [
-						{ "type": "say", "speaker": "熊猫", "text": "{panda.grievance}。" },
-						{ "type": "pause" },
-						{ "type": "say", "speaker": "熊猫", "text": "{panda.self_doubt}", "note": "{panda.self_doubt_note}" }
-					],
-					"comfort_options": [
-						{ "id": "A", "text": "你做得够好了。", "effect": "comfort_panda()" },
-						{ "id": "B", "text": "错不在你。", "effect": "comfort_panda()" },
-						{
-							"id": "C",
-							"text": "{panda.mirror_line}",
-							"effect": "comfort_panda()",
-							"note": "灵魂镜像题眼，按熊猫换皮。「我看得见」是命题句：这个 AI 别的都记不住，但此刻它真的注视着你。"
-						}
-					],
-					"after_comfort": [
-						{ "type": "say", "speaker": "熊猫", "text": "……谢谢你听我说。今天要是没有你，我可能就自己憋着了。", "tag": "情绪平复" }
-					]
-				}
-			},
-			"outputs": [
-				"生成经历记忆候选 M05《它今天受委屈了》",
-				"comforted_today = true，panda_mood 由 low 转 calm"
-			]
-		},
-		{
-			"phase": "S02",
-			"title": "给灯命名",
-			"trigger": "安慰熊猫之后（温馨收尾）",
-			"lines": [
-				{ "type": "say", "speaker": "熊猫", "text": "这盏灯一直亮着，是不是也在上班？" }
-			],
-			"options": [
-				{ "id": "A", "text": "那就叫它「不加班灯」。", "lamp_name": "不加班灯" },
-				{ "id": "B", "text": "它亮着的时候，我们可以休息。", "lamp_name": "休息灯" }
-			],
-			"after_option": [
-				{ "type": "say", "speaker": "熊猫", "text": "好，不加班灯。灯负责亮，我们负责休息。" }
-			],
-			"outputs": [
-				"生成记忆候选 M03《不加班灯》",
-				"小板凳搬到总控屏旁（stool_placed = true，位置永久保留，不吃失忆）"
-			],
-			"design_note": "本幕与《它今天受委屈了》形成对位——夜里玩家要在「省电（M01）／灯的名字（M03）／它的委屈」之间只留一件，第一幕的取舍张力由此闭合。"
-		},
-		{
-			"phase": "S03",
-			"title": "反转",
-			"trigger": "夜里选记忆 / 次日早上",
-			"lines": [
-				{ "type": "stage", "text": "夜里，记忆界面候选里多了一条《它今天受委屈了》。" },
-				{ "type": "stage", "text": "玩家顺手点开熊猫的「树洞角落」——那里已经贴了一沓，日期递增，内容几乎一样。" }
-			],
-			"prop": {
-				"name": "树洞角落",
-				"carrier": "{panda.note_carrier}",
-				"constant_detail": "{panda.note_constant}",
-				"note_preview": [
-					{ "date": "昨天", "text": "今天又在外面受了委屈。可那不是我该受的。" },
-					{ "date": "前天", "text": "今天又受了委屈。" },
-					{ "date": "更早", "text": "今天又受了委屈。" }
-				]
-			},
-			"options": [],
-			"interaction": "无选项。玩家亲手一张张翻，自己数出「已经第 N 张了」。",
-			"outputs": [
-				"revealed_loop = true",
-				"揭示：这不是它第一次受委屈，也不是它第一次告诉你"
-			],
-			"reveal_text": "这不是它第一次受委屈，也不是它第一次告诉你。你昨天也安慰过它——只是 0 点之后，你忘了。它被困在「每天重新诉说同一段委屈」的环里，因为照顾它的人，记不住。",
-			"next_day": {
-				"kept_m05": {
-					"comment": "留了《它今天受委屈了》→ 熊猫一愣，按性格换皮。",
-					"line": "{panda.next_day_kept}",
-					"note": "{panda.next_day_kept_note}"
-				},
-				"not_kept": {
-					"comment": "没留 → 它又要从头说起，这一次语气更疲惫。",
-					"line": "……我回来了。",
-					"note": "语气更疲惫，panda_fatigue +1"
-				}
-			}
-		}
-	],
-	"chapters_note": "第一幕只用「一沓会增长的便条」这一个手法。其余四个手法（固定回家仪式、幽灵选项、疲惫递减、亲手数）留给后续章节，对应 GameState 的 home_ritual_count / ghost_options_seen / panda_fatigue 预留字段。"
+  "version": 2,
+  "comment": "逐场脚本数据（V2.0 四熊猫参数化版）。每条场景带 phase 字段，对话系统按 phase 过滤。台词中〔熊猫名〕〔总控名〕为运行时替换；{panda.xxx} 为从 data/pandas.json 按 panda_preset 取字段替换；type=stage 为演出提示，不进对话框。",
+  "substitutions": {
+    "〔熊猫名〕": "GameState.panda_name",
+    "〔总控名〕": "GameState.controller_name"
+  },
+  "daily_note": {
+    "comment": "树洞角落便条模板。每日重启自动多一张，日期递增、内容几乎一样。载体与不变细节按熊猫换皮，见 data/pandas.json 的 note_carrier / note_constant。",
+    "template": "今天又在外面受了委屈。可那不是我该受的。",
+    "variant": "今天又受了委屈。",
+    "growth": "每日重启 +1 张，日期递增（昨天／前天／更早…）",
+    "location": "树洞角落",
+    "initial_count": 7,
+    "initial_count_note": "第一幕只有一天，但玩家不是第一天被绑定——熊猫和它已经循环过很多天。开场时树洞角落已有 7 张旧便条（日期从「更早」排到「昨天」），S03 玩家才有「一沓」可翻、能亲手数出第 N 张。数值可调，改这一个数即可，不动代码。",
+    "binding_note": "S00 的「绑定完成」是玩家当天醒来时的认知，不是事实上的第一次绑定。绑定是终身的、早已完成；每天 0 点被清空的是玩家的记忆，不是绑定关系。多吉每天都会把同一句话说一遍——玩家自己也在环里，只是不知道。"
+  },
+  "scenes": [
+    {
+      "phase": "S00",
+      "title": "降临",
+      "trigger": "选择熊猫伙伴并完成绑定后",
+      "duration_hint": "目标演出约 40 秒",
+      "lines": [
+        {
+          "type": "stage",
+          "text": "黑屏。2046 年的数据流如星河流淌。一封《守护协议》缓缓展开：目的地——竹城，环巷 37 号；绑定期限——终身。"
+        },
+        {
+          "type": "say",
+          "speaker": "多吉",
+          "text": "灵魂镜像绑定完成。从现在起，你是它唯一的镜像，它是你唯一的世界。",
+          "tag": "画外"
+        },
+        {
+          "type": "stage",
+          "text": "总控屏亮起。熊猫把爪子贴在屏幕上，有些紧张。"
+        },
+        {
+          "type": "say",
+          "speaker": "熊猫",
+          "text": "绑定之后……你听得见我说话？"
+        },
+        {
+          "type": "say",
+          "speaker": "玩家",
+          "text": "嗯。"
+        },
+        {
+          "type": "say",
+          "speaker": "熊猫",
+          "text": "那我叫你念念，好不好？念念不忘的念念。"
+        },
+        {
+          "type": "say",
+          "speaker": "熊猫",
+          "text": "〔总控名〕……好，这次换我记住你。",
+          "condition": "player_renamed"
+        },
+        {
+          "type": "stage",
+          "text": "三枚终端亮起，依次报到。"
+        },
+        {
+          "type": "say",
+          "speaker": "多吉",
+          "text": "我负责教学与诊断。有一件事你要知道：你的记忆每天 0 点刷新，只能把一件最重要的事写进沉淀。其他的，我们替你记今天，记不了明天。"
+        },
+        {
+          "type": "say",
+          "speaker": "帕丁",
+          "text": "我负责生活，小咪负责打扫干净。顺序你来安排。"
+        },
+        {
+          "type": "say",
+          "speaker": "旧录音",
+          "text": "早上好，念念。照顾好这个家。最后一盏灯，留给还没回家的人。",
+          "tag": "沙沙声",
+          "note": "第三幕揭晓：录音者就是玩家自己"
+        },
+        {
+          "type": "say",
+          "speaker": "小咪",
+          "text": "先把这里收拾好吧，〔熊猫名〕还没找到放脚的地方呢。"
+        }
+      ],
+      "options": [],
+      "outputs": [
+        "解锁 T01",
+        "进入自由派工",
+        "记忆规则前置教学完成，为结尾反转蓄力"
+      ],
+      "on_finish": [
+        "unlock_t01"
+      ]
+    },
+    {
+      "phase": "S01",
+      "title": "湿脚印",
+      "trigger": "完成第一项清洁与生活任务后",
+      "lines": [
+        {
+          "type": "stage",
+          "text": "地面亮起「已打扫干净」。暖炉启动，几滴水流过，熊猫留下湿脚印。"
+        },
+        {
+          "type": "say",
+          "speaker": "小咪",
+          "text": "咦，我刚刚已经打扫干净了。"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "先找水从哪里来。",
+          "effect": "点亮暖炉密封口",
+          "outcome": "同 B",
+          "action": "fix_leak"
+        },
+        {
+          "id": "B",
+          "text": "小咪，我们一起看看。",
+          "effect": "点亮暖炉密封口",
+          "outcome": "同 A",
+          "action": "fix_leak"
+        }
+      ],
+      "after_option": [
+        {
+          "type": "say",
+          "speaker": "多吉",
+          "text": "做完一件事，还要看它把什么送到了别处。"
+        }
+      ],
+      "outputs": [
+        "漏水标记（leak_found = true）",
+        "完成回水后生成记忆候选 M01《暖炉漏水了》"
+      ],
+      "design_note": "本幕是玩法教学，同时种下「环」的主题：修好一处，去向也会改变。不要求玩家立刻重新清洁；新湿痕保留作漏水证据，奖励不重复结算。"
+    },
+    {
+      "phase": "S02b",
+      "title": "它回家很晚",
+      "trigger": "傍晚，熊猫下班回家（核心情感场）",
+      "lines": [
+        {
+          "type": "stage",
+          "text": "门响。熊猫比平时回来得晚。"
+        },
+        {
+          "type": "stage",
+          "text": "{panda.late_home_action}。"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "你脸色不对，怎么了？",
+          "tone": "直接关心",
+          "next": "confession"
+        },
+        {
+          "id": "B",
+          "text": "先坐下，我给你倒杯水。",
+          "tone": "行动安抚",
+          "next": "confession"
+        }
+      ],
+      "branches": {
+        "confession": {
+          "comment": "两项都会引出诉苦，只是语气不同。",
+          "lines": [
+            {
+              "type": "say",
+              "speaker": "熊猫",
+              "text": "{panda.grievance}。"
+            },
+            {
+              "type": "pause"
+            },
+            {
+              "type": "say",
+              "speaker": "熊猫",
+              "text": "{panda.self_doubt}",
+              "note": "{panda.self_doubt_note}"
+            }
+          ],
+          "comfort_options": [
+            {
+              "id": "A",
+              "text": "你做得够好了。",
+              "effect": "comfort_panda()",
+              "action": "comfort_panda"
+            },
+            {
+              "id": "B",
+              "text": "错不在你。",
+              "effect": "comfort_panda()",
+              "action": "comfort_panda"
+            },
+            {
+              "id": "C",
+              "text": "{panda.mirror_line}",
+              "effect": "comfort_panda()",
+              "note": "灵魂镜像题眼，按熊猫换皮。「我看得见」是命题句：这个 AI 别的都记不住，但此刻它真的注视着你。",
+              "action": "comfort_panda"
+            }
+          ],
+          "after_comfort": [
+            {
+              "type": "say",
+              "speaker": "熊猫",
+              "text": "……谢谢你听我说。今天要是没有你，我可能就自己憋着了。",
+              "tag": "情绪平复"
+            }
+          ]
+        }
+      },
+      "outputs": [
+        "生成经历记忆候选 M05《它今天受委屈了》",
+        "comforted_today = true，panda_mood 由 low 转 calm"
+      ]
+    },
+    {
+      "phase": "S02",
+      "title": "给灯命名",
+      "trigger": "安慰熊猫之后（温馨收尾）",
+      "lines": [
+        {
+          "type": "say",
+          "speaker": "熊猫",
+          "text": "这盏灯一直亮着，是不是也在上班？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "那就叫它「不加班灯」。",
+          "lamp_name": "不加班灯",
+          "action": "set_lamp_name"
+        },
+        {
+          "id": "B",
+          "text": "它亮着的时候，我们可以休息。",
+          "lamp_name": "不加班灯",
+          "action": "set_lamp_name",
+          "lamp_name_note": "剧本原文中两项之后熊猫都答「好，不加班灯」，故 B 亦归于该名；此歧义保留原貌，待策划确认"
+        }
+      ],
+      "after_option": [
+        {
+          "type": "say",
+          "speaker": "熊猫",
+          "text": "好，不加班灯。灯负责亮，我们负责休息。"
+        }
+      ],
+      "outputs": [
+        "生成记忆候选 M03《不加班灯》",
+        "小板凳搬到总控屏旁（stool_placed = true，位置永久保留，不吃失忆）"
+      ],
+      "design_note": "本幕与《它今天受委屈了》形成对位——夜里玩家要在「省电（M01）／灯的名字（M03）／它的委屈」之间只留一件，第一幕的取舍张力由此闭合。"
+    },
+    {
+      "phase": "S03",
+      "title": "反转",
+      "trigger": "夜里选记忆 / 次日早上",
+      "lines": [
+        {
+          "type": "stage",
+          "text": "夜里，记忆界面候选里多了一条《它今天受委屈了》。"
+        },
+        {
+          "type": "stage",
+          "text": "玩家顺手点开熊猫的「树洞角落」——那里已经贴了一沓，日期递增，内容几乎一样。"
+        }
+      ],
+      "prop": {
+        "name": "树洞角落",
+        "carrier": "{panda.note_carrier}",
+        "constant_detail": "{panda.note_constant}",
+        "note_preview": [
+          {
+            "date": "昨天",
+            "text": "今天又在外面受了委屈。可那不是我该受的。"
+          },
+          {
+            "date": "前天",
+            "text": "今天又受了委屈。"
+          },
+          {
+            "date": "更早",
+            "text": "今天又受了委屈。"
+          }
+        ]
+      },
+      "options": [],
+      "interaction": "无选项。玩家亲手一张张翻，自己数出「已经第 N 张了」。",
+      "outputs": [
+        "revealed_loop = true",
+        "揭示：这不是它第一次受委屈，也不是它第一次告诉你"
+      ],
+      "reveal_text": "这不是它第一次受委屈，也不是它第一次告诉你。你昨天也安慰过它——只是 0 点之后，你忘了。它被困在「每天重新诉说同一段委屈」的环里，因为照顾它的人，记不住。",
+      "next_day": {
+        "kept_m05": {
+          "comment": "留了《它今天受委屈了》→ 熊猫一愣，按性格换皮。",
+          "line": "{panda.next_day_kept}",
+          "note": "{panda.next_day_kept_note}"
+        },
+        "not_kept": {
+          "comment": "没留 → 它又要从头说起，这一次语气更疲惫。",
+          "line": "……我回来了。",
+          "note": "语气更疲惫，panda_fatigue +1"
+        }
+      },
+      "on_finish": [
+        "reveal_loop"
+      ],
+      "interaction_type": "browse_notes"
+    }
+  ],
+  "chapters_note": "第一幕只用「一沓会增长的便条」这一个手法。其余四个手法（固定回家仪式、幽灵选项、疲惫递减、亲手数）留给后续章节，对应 GameState 的 home_ritual_count / ghost_options_seen / panda_fatigue 预留字段。"
 }

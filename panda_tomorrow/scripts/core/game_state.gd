@@ -130,6 +130,11 @@ var heater_on: bool = false
 ## 树洞角落的便条张数。每日重启自动 +1，日期递增、内容几乎一样；
 ## S03 玩家亲手翻看、自己数出"已经 N 张了"，反转由玩家拼出来，不靠旁白点破。
 ## 便条载体与不变细节按熊猫换皮，见 data/pandas.json 的 note_carrier / note_constant。
+##
+## 注意：第一幕只演一天，但玩家不是第一天被绑定——绑定早已完成、是终身的，
+## 每天 0 点被清空的是玩家的记忆而不是绑定关系。所以开场时树洞角落本来就已经
+## 有一沓旧便条（张数取 data/script.json 的 daily_note.initial_count，默认 7）。
+## 若从 0 起算，S03 就只有 1 张，"亲手数出第 N 张"的反转会垮掉。
 var note_count: int = 0
 
 ## 反转是否已揭示（S03 翻完那沓便条后置 true：它不是第一次受委屈）。
@@ -167,6 +172,9 @@ var _data_loaded := false
 func _ready() -> void:
 	_ensure_data_loaded()
 	_init_task_status()
+	# 开场就有一沓旧便条（不是空树洞），S03 才有「一沓」可翻。
+	if note_count == 0:
+		note_count = get_initial_note_count()
 
 
 # ============================================================
@@ -288,6 +296,13 @@ func get_scene(scene_phase: String) -> Dictionary:
 func get_daily_note_template() -> Dictionary:
 	_ensure_data_loaded()
 	return _script.get("daily_note", {}).duplicate(true)
+
+
+## 第一幕开场时树洞角落已有的旧便条张数（data/script.json 的 daily_note.initial_count）。
+## 第一幕只演一天，但玩家早已被绑定、已经循环过很多天，所以开局不是空树洞。
+func get_initial_note_count() -> int:
+	var tpl := get_daily_note_template()
+	return int(tpl.get("initial_count", 7))
 
 
 ## 把台词里的占位符替换成实际值：
@@ -733,7 +748,8 @@ func reset_for_new_game() -> void:
 	leak_found = false
 	leak_fixed = false
 	heater_on = false
-	note_count = 0
+	# 不是空树洞：绑定早已完成，玩家醒来时树洞角落已经贴着一沓旧便条。
+	note_count = get_initial_note_count()
 	revealed_loop = false
 
 	tasks_status = {}
